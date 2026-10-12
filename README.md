@@ -1,119 +1,79 @@
-# DATA201-DATA422-Group-Project-
-DATA201 | DATA422 Group Project 
+# Christchurch Airbnb and Rental Market Analysis
 
-## Team Members:
-- Muhammad Aliff Mikhail Bin Norkamarulazhar (DATA201)
-- Asfa Hurin Binti Asmawi (DATA201)
-- Dron Vihang Dalvi (DATA422)
-- Abdurrahman Rais Fadhil (DATA422)
+A reproducible data-wrangling and analysis project combining monthly Inside Airbnb listings for Christchurch, New Zealand, with quarterly rental bond statistics from Tenancy Services. The project prepares and validates data, enriches Airbnb observations with Stats NZ Statistical Area 2 (SA2) geography, and generates summary statistics and visualisations. Where reporting periods and geographic identifiers can be matched, it compares short-term Airbnb prices with long-term rental prices.
 
-# Project Pipeline
+## Team
 
-This repository contains an automated data-wrangling and analysis pipeline for Christchurch Airbnb listings and New Zealand rental bond data.
+| Team member | Course |
+| ----------- | ------ |
+| Dron Vihang Dalvi | DATA422 |
+| Abdurrahman Rais Fadhil | DATA422 |
+| Muhammad Aliff Mikhail Bin Norkamarulazhar | DATA201 |
+| Asfa Hurin Binti Asmawi | DATA201 |
 
-The workflow processes monthly Airbnb datasets, combines and cleans the Christchurch observations, adds Stats NZ Statistical Area 2 (SA2) geographic information, performs the Airbnb-versus-rental-bond analysis where matching bond reporting periods are available, and regenerates summary statistics and visualisations.
+## Project overview
 
-## Running the Pipeline
+The project contains two related workflows:
+1. **Airbnb workflow:** Prepares monthly source files, filters Christchurch City observations, combines and cleans monthly data, updates geographic mappings, and regenerates analysis outputs.
+2. **Rental bond comparison:** Cleans quarterly rental bond data and compares it with Airbnb observations only for periods and area that can be matched.
 
-From the project root, run:
+The automated Airbnb workflow currently covers **October 2025** to **August 2026**.
 
-`python scripts/run_airbnb_pipeline.py`
+## Quick start
 
-The pipeline runs the following stages in sequence:
+### Requirements
 
-1. Prepare available monthly Christchurch Airbnb datasets.
-2. Combine the processed monthly datasets into a single Christchurch dataset.
-3. Clean and validate the combined Airbnb dataset.
-4. Update Stats NZ SA2 area codes using the persistent coordinate lookup.
-5. Run the Airbnb-versus-rental-bond analysis for periods supported by the available bond data.
-6. Generate summary statistics.
-7. Regenerate visualisations.
+- Python 3
+- The Python packages imported by the project scripts
+- A Koordinates API key when new or unresolved coordinates require geographic lookup
 
-If a stage fails, the pipeline stops rather than continuing with potentially invalid downstream outputs.
+### Prepare the data
 
-## Current Data Coverage
+Place monthly Inside Airbnb New Zealand `listings.csv` downloads in `data/raw/`, using the naming convention `listings_YYYY_MM.csv`. For example:
 
-The automated Airbnb workflow currently covers October 2025 through August 2026.
+`data/raw/listings_2026_07.csv`
 
-The rental bond dataset currently contains reporting periods at:
+`data/raw/listings_2026_08.csv`
 
-- 2025-10-01
-- 2026-01-01
-- 2026-04-01
+Use the CSV file, not the compressed `csv.gz` file. Keep raw downloads unchanged to support reproducibility.
 
-These reporting periods support the Airbnb-versus-rental-bond comparison through June 2026.
-
-July and August 2026 remain part of the Airbnb dataset and Airbnb-only analyses, but are excluded from the rental-bond comparison because no matching July 2026 bond reporting period is currently available. This prevents unsupported bond values from being invented or carried forward.
-
-## Incremental Area-Code Processing
-
-`data/processed/Christchurch_coordinate_area_lookup.csv` is used as a persistent cache of previously resolved latitude/longitude-to-SA2 mappings.
-
-Coordinates that have already been successfully mapped are reused. Only previously unseen or unresolved coordinates need to be sent to the Koordinates API.
-
-For the current cleaned Airbnb dataset:
-
-- 3,927 unique coordinate pairs are required.
-- All 3,927 current coordinate pairs were already available in the lookup on the repeat run.
-- 0 new Koordinates API queries were required.
-- The persistent lookup currently contains 4,095 known coordinate pairs, including mappings retained from earlier pipeline runs.
-
-Each user should store their own Koordinates API key locally in a `.env` file using:
+Store your Koordinates API key in a local `.env` file at the repository root:
 
 `KOORDINATES_API_KEY=YOUR_API_KEY`
 
-The `.env` file is excluded from Git and must not be committed.
+Do not commit `.env` or credentials to Git. Each team member who needs to run geographic lookups should configure their own key.
 
-## Airbnb Scrape Dates
+Scrape dates used to calculate `days_since_last_review` are maintained in `config/airbnb_scrape_dates.csv`. Add the corresponding scrape date whenever a new monthly dataset is added.
 
-The `days_since_last_review` calculation uses the actual scrape date associated with each monthly Inside Airbnb dataset.
+### Run the pipeline
 
-These dates are stored separately in:
+From the repository root:
 
-`config/airbnb_scrape_dates.csv`
+`python scripts/run_airbnb_pipeline.py`
 
-rather than being hard-coded inside the visualisation script.
+The orchestrator runs stages in sequence and stops if a stage fails, preventing later steps from using incomplete or invalid outputs.
 
-When another monthly Airbnb dataset is added, its corresponding scrape date should also be added to this configuration file.
+## Automated workflow
 
-## Validation
+1. **Prepare monthly data**: Discover available monthly source files, select Christchurch City observations, and add `month_year`.
+2. **Combine monthly data**: Concatenate processed monthly file into one Christchurch dataset.
+3. **Clean and validate**: Apply cleaning rules and generate the cleaned combined dataset and audit information.
+4. **Update geographic mappings**: Reuse the saved coordinate-to-SA2 lookup and query Koordinates only for new or unresolved coordinate pairs.
+5. **Run the rental bond comparison**: Use only reporting periods supported by the available bond dataset.
+6. **Generate summary statistics**.
+7. **Regenerate visualisations and missing-value summaries**.
 
-The automated workflow includes checks for:
+## Data sources
 
-- required columns,
-- valid cleaning outputs,
-- coordinate bounds,
-- duplicate spatial lookup keys,
-- spatial lookup match rate,
-- preservation of Airbnb row counts during geographic enrichment,
-- valid month values,
-- availability of matching rental-bond reporting periods,
-- and missing scrape-date metadata.
+### Airbnb listings
 
-Critical validation failures stop the pipeline instead of silently allowing inconsistent downstream outputs to continue.
+- **Provider:** Inside Airbnb, an independent, non-commercial open-data initiative
+- **Source:** https://insideairbnb.com/get-the-data/
+- **File:** `listings.csv` (CSV, not `.csv.gz`)
+- **Project coverage:** Christchurch City listings from monthly New Zealand snapshots, October 2025-August 2026
 
-## Main Pipeline Outputs
+#### Data Dictionary
 
-The main generated datasets and outputs include:
-
-- `data/processed/christchurch_listings_combined.csv`
-- `data/processed/christchurch_listings_combined_cleaned.csv`
-- `data/processed/Christchurch_coordinate_area_lookup.csv`
-- `data/processed/Christchurch_Airbnb_with_area_codes.csv`
-- regenerated summary statistics and plots in `outputs/`
-
-For further implementation details, see:
-
-`docs/deliverable7_automation.md`
-
-# Airbnb Listings Analysis
-
-## Data Source
-- Provider: Sourced from Inside Airbnb, an independent, non-commercial open-data initiative.
-- Coverage: Provides data on Airbnb listings, availability, and guest reviews across major global cities.
-- File Name: listings.csv
-
-## Data Dictionary
 | Column Num | Column | Data Type | Description |
 | ----- | ----- | ----- | ----- |
 | 1 | id | Integer/String | Unique identifier assigned by Airbnb for the listing. |
@@ -135,77 +95,17 @@ For further implementation details, see:
 | 17 | number_of_reviews_ltm | Integer | Number of reviews received by the listing within the last 12 months. |
 | 18 | license | String | Local permit, registration, or business license number (if required/provided). |
 
-## Data Notes
-### Location Privacy
-- Latitude and longitude coordinates are masked by Airbnb for privacy.
-- Coordinates are randomly shifted within a range of 0 to 150 meters from the ture property location.
+Some fields may contain missing values. Airbnb coordinates are masked for privacy and may not identify the exact property location.
 
-### Missing Values
-- Null/NaN values occur in columns such as neighbourhood_group, last_review, reviews_per_month, and license.
-- Missingness depends on listing activity levels and local municipal regulatory requirements.
+### Rental bond statistics
 
-## Data Cleaning Documentation Summary
+- **Provider:** Tenancy Services, New Zealand
+- **Dataset:** Detailed rental bond data
+- **Source:** https://www.tenancy.govt.nz/about-tenancy-services/data-and-statistics/rental-bond-data/
+- **Raw file:** `data/raw/rental_bond_detailed_2020_2026.csv`
 
-## Airbnb Listings Data Cleaning
+#### Data Dictionary
 
-The cleaning stage prepares the combined Christchurch Airbnb dataset for downstream analysis.
-
-Current automated dataset:
-
-- Input: `data/processed/christchurch_listings_combined.csv`
-- Cleaned output: `data/processed/christchurch_listings_combined_cleaned.csv`
-- Current input size: 35,796 listing-month observations
-- Current cleaned size: 24,414 listing-month observations
-- Current temporal coverage: October 2025 through August 2026
-
-## Changes Made and Cleaning Justification
-
-1. **Price filtering**
-   - Rows with missing prices are removed because price is required for the downstream rental and pricing analyses.
-   - Listings with prices above NZ$1,500 per night are excluded as extreme values outside the intended analytical scope.
-
-2. **Temporal information**
-   - The `month_year` field is retained so observations can be identified by monthly Airbnb dataset.
-   - For the rental-bond comparison, `month_year` is converted dynamically to its calendar-quarter reporting period.
-
-3. **Column reduction**
-   - Fully empty or zero-information columns are removed where appropriate.
-   - `license` and `neighbourhood_group` are removed when they provide no useful variation for the Christchurch analysis.
-
-4. **Missing-value treatment**
-   - Missing `reviews_per_month` values associated with listings that have no reviews are filled with `0.0`.
-   - Missing `minimum_nights` values are filled using the observed dataset median.
-   - Missing host names are represented as `"Unknown"` rather than removing the listing.
-
-5. **Validation**
-   - Required columns are checked before cleaning.
-   - Cleaning steps include sanity checks so invalid or unexpected data cause a clear failure rather than silently entering downstream outputs.
-   - The cleaning audit reports the number of rows removed and retained for the current dataset.
-
-## Current Cleaned Output
-
-The current automated run produces:
-
-- 24,414 cleaned listing-month observations
-- 17 columns
-- Airbnb coverage from October 2025 through August 2026
-
-The cleaned dataset is then used for Stats NZ SA2 geographic enrichment and subsequent analysis.
-
-
-# Rental Bond Cleaning
-
-## Source and purpose
-* Provider: Tenancy Services, New Zealand
-* Dataset: Detailed quarterly rental bond report (2020-2026)
-* Source: https://www.tenancy.govt.nz/about-tenancy-services/data-and-statistics/rental-bond-data/
-* Raw File Path: data/raw/rental_bond_detailed_2020_2026.csv
-* Cleaning Script: scripts/Deliverable4_BondCleaning.py
-* Scope & Context:
-  - Documents private-sector tenancy bonds organised by tenancy start date and SA2-2019 geographical definitions.
-  - Bond counts are rounded to base 3; categories with fewer than 5 bonds are suppressed by the provider.
-
-## Data Dictionary
 | Column Num | Column | Data Type | Working Description |
 | ----- | ----- | ----- | ----- |
 | 1 | TimeFrame | string | Reporting reference start date for the quarterly bond summary (e.g., 2020-01-01 to 2026-04-01). |
@@ -220,176 +120,140 @@ The cleaned dataset is then used for Stats NZ SA2 geographic enrichment and subs
 | 10 | Upper Quartile Rent | float64 | Upper quartile (75th percentile) weekly rental price in NZD ($). |
 | 11 | Lower Quartile Rent | float64 | Lower quartile (25th percentile) weekly rental price in NZD ($). |
 | 12 | Log Std Dev Weekly Rent | float64 | Standard deviation of log-transformed weekly rent, measuring price dispersion. |
-* This is not a provider-issued data dictionary. The precise statistical and aggregate definitions remain unverified.
 
-## Processing, Evidence, and Limitations
+The bond data are quarterly and use SA2-2019 geographic definitions.
+Some bond counts are rounded and small categories may be suppressed by the provider.
 
-### Cleaning Steps & Row Counts
-| Num | Step | Rows / effect |
-| ----- | ----- | ----- |
-| 1 | Original raw dataset | 226,080 rows x 12 columns. |
-| 2 | Convert TimeFrame; filter Oct 2025-Jun 2026 | 27,212 rows retained; 198,868 excluded. Dates present: 2025-10-01, 2026-01-01, 2026-04-01. |
-| 3 | Remove missing Location Id | 94 rows excluded because no geographic match is possible; these also lack median rent. 27,118 rows remain. |
-| 4 | Exclude Location Id = -99 | 127 more records excluded from the ordinary-location dataset because mapping is unverified. Expected final: 26,991 rows x 12 columns. |
+### Geographic lookup
 
-### Missing and Special Values
-- Pre-Filtering Missingness: 94 missing Location Id records, 890 missing Number Of Beds records, and 94 missing values across all five rent-statistic fields.
-- Co-occurrence: The 94 records with missing Location Id directly corresponded to the 94 missing rent statistic entries.
-- Temporal Concentration: 819 of the 890 missing bedroom values occurred in the October 2025 period.
-- Treatment: Missing bedroom values are retained as NaN without imputation; aggregate "ALL" category values are explicitly retained.
+The project uses the Koordinates Query API to map Airbnb latitude/longitude coordinates to a Stats NZ SA2 area code. The API key is supplied locally through the `KOORDINATES_API_KEY` environment variable.
 
-### Checks and Treatment of Outliers
-- Data Audits: Inspected for exact duplicates, negative bond counts, non-positive rent values, and quartile ordering errors.
-- Uniqueness Validation: Composite-key uniqueness checks implemented using TimeFrame + Location Id + Dwelling Type + Number Of Beds.
-- Outlier Policy: Genuine extreme rental values are preserved to reflect true market variation rather than treated as errors.
-- Export and Reproduction
-Output Path: data/processed/rental_bond_cleaned_2025_10_to_2026_04.csv
-Final Dimensions: 26,991 rows × 12 columns.
+The Airbnb geographic field uses SA2-2026 codes, while the rental bond
+source documentation refers to SA2-2019 geography. This difference can
+contribute to unmatched records.
 
-# Deliverable 5 - Airbnb and Rental Bond Integration
+## Current data coverage
 
-> **Historical Deliverable 5 snapshot:** This section documents the Airbnb–rental bond integration as completed for Deliverable 5, using Airbnb data from October 2025 through June 2026. The current automated pipeline extends the Airbnb workflow through August 2026; see the Project Pipeline section above for the current workflow.
+### Airbnb
 
-## Geographic Area Mapping
+The automated Airbnb workflow currently covers **October 2025 through August 2026**. The current generated outputs report:
+- Combined input: **35,796 listing-month observations**
+- Cleaned combined dataset: **24,414 listing-month observations**
+- Cleaned dataset width: **17 columns**
+  
+These are run-specific figures and may change when source data or
+cleaning rules are updated.
 
-Airbnb listings contain latitude and longitude coordinates but do not contain the `Location Id` used by the rental bond dataset.
+### Rental bond data
 
-`scripts/area_code.py` uses the Koordinates Query API to obtain Stats NZ SA2 area codes from Airbnb coordinates.
+The cleaned bond dataset currently contains reporting periods:
+- `2025-10-01`
+- `2026-01-01`
+- `2026-04-01`
 
-The script:
+These periods support the comparison through June 2026. July and August
+2026 remain available for Airbnb-only analyses; the workflow does not
+invent or carry forward bond values for unavailable periods.
 
-1. loads the Christchurch Airbnb data,
-2. extracts unique latitude/longitude pairs,
-3. queries Koordinates for an SA2 area code,
-4. saves the coordinate-to-area-code lookup,
-5. merges the area codes back onto the Airbnb records.
+## Cleaning and validation
 
-The Koordinates API key is read from the local `KOORDINATES_API_KEY` environment variable and is not stored in the repository.
+### Airbnb cleaning
 
-Saved mapping files:
+The cleaning stage prepares the combined Christchurch dataset for downstream analysis. The current rules include:
+- Remove rows with missing prices because price is required for pricing analyses.
+- Exclude nightly prices above NZ$1,500 as extreme values outside the intended analytical scope.
+- Retain `month_year` to identify the source month for each observation.
+- Fill missing `reviews_per_month` values with `0.0` where the listing has no reviews.
+- Fill missing `minimum_nights` values using the observed dataset median.
+- Represent missing host names as `"Unknown"`.
+- Remove `license` and `neighbourhood_group` where they provide no useful variation for the Christchurch analysis.
+- Check required columns and sanity conditions, and report rows removed and retained.
 
-- `data/processed/Christchurch_coordinate_area_lookup.csv`
-- `data/processed/Christchurch_Airbnb_with_area_codes.csv`
+These rules affect the analysis and should be reviewed if the research
+questions or source schema change.
 
-Mapping validation:
+### Rental bond cleaning
 
-- 3,957 unique coordinate pairs
-- 0 duplicate coordinate pairs
-- 0 missing area codes in the lookup
-- 0 missing area codes after transferring the mapping onto the final cleaned Airbnb dataset
+The bond-cleaning workflow filters the source to the reporting periods used in the project, checks missing and invalid values, audits duplicates and rent-statistic consistency, and excludes records whose geographic identifiers cannot be mapped reliably for the analysis.
+Missing bedroom categories are retained rather than imputed, and genuine extreme rental values are not automatically removed.
 
-The saved area-code results are reused rather than repeating the API requests.
+### Pipeline validation
 
-## Datasets Used
+The automated workflow checks required columns, cleaning outputs, coordinate bounds, duplicate spatial lookup keys, spatial lookup match rate, missing area codes, preservation of Airbnb row counts during geographic enrichment, valid month values, availability of matching bond periods, and missing scrape-date metadata. Critical validation failures stop the pipeline rather than silently passing inconsistent data downstream.
 
-Airbnb:
+## Geographic enrichment and caching
 
-`data/processed/christchurch_listings_2025_10_to_2026_06_cleaned.csv`
+The persistent coordinate lookup is stored in `data/processed/Christchurch_coordinate_area_lookup.csv`. The enriched dataset is stored in `data/processed/Christchurch_Airbnb_with_area_codes.csv`.
 
-- 18,080 cleaned listing-month observations
+Previously resolved coordinate pairs are reused; only new or unresolved pairs require additional Koordinates API queries. The current run reported **3,927 unique coordinate pairs** required by the cleaned Airbnb dataset, all already available in the lookup, so **0 new API queries** were required. The lookup contained **4,095 coordinate pairs** at the time of that run. These counts may change as data are added.
 
-Rental bonds:
+## Airbnb and rental bond comparison
 
-`data/processed/rental_bond_cleaned_2025_10_to_2026_04.csv`
+The integration analysis joins Airbnb observations to rental bond records using Airbnb `area_code` and bond `Location Id`, together with the aligned reporting period.
 
-- 26,991 rows
-- 12 columns
+### Time alignment
 
-## Time Alignment
+| Airbnb observation months | Bond reporting period |
+| ------------------------- | --------------------- |
+| October-December 2025 | `2025-10-01` |
+| January-March 2026 | `2026-01-01` |
+| April-June 2026 | `2026-04-01` |
 
-Airbnb data are monthly while the rental bond data use reporting reference dates.
+For the overall location-level comparison, the analysis uses bond records where `Dwelling Type = ALL` and `Number Of Beds = ALL`, avoiding the combination of overlapping subgroup medians.
 
-The Airbnb months are aligned as follows:
-
-| Airbnb months | Bond TimeFrame |
-| --- | --- |
-| Oct-Dec 2025 | 2025-10-01 |
-| Jan-Mar 2026 | 2026-01-01 |
-| Apr-Jun 2026 | 2026-04-01 |
-
-All 18,080 Airbnb observations were successfully assigned a TimeFrame.
-
-## Rental Bond Preparation
-
-The bond dataset contains multiple dwelling and bedroom categories for the same location and reporting period.
-
-For the general location-level comparison, the analysis uses records where:
-
-- `Dwelling Type = ALL`
-- `Number Of Beds = ALL`
-
-This produces one overall bond record per location and reporting period and avoids averaging subgroup medians or summing overlapping categories.
-
-Validation:
-
-- 4,865 location-time records
-- 0 duplicate `Location Id + TimeFrame` combinations
-- 0 missing median rent values
-
-Weekly median rent is converted to a daily equivalent:
+Weekly median long-term rent is converted to a daily equivalent:
 
 `Daily Rent = Median Rent / 7`
 
-## Dataset Join
-
-`scripts/Deliverable5_areaoperations.py` joins Airbnb and rental bond data using:
-
-- Airbnb `area_code` / bond `Location Id`
-- `TimeFrame`
-
-A left join is first used for validation so unmatched Airbnb records remain visible.
-
-Join results:
-
-- Airbnb rows before join: 18,080
-- Rows after join: 18,080
-- Matched rows: 13,821
-- Unmatched rows: 4,259
-- Match rate: 76.4%
-
-The unchanged row count confirms that the join does not multiply Airbnb observations.
-
-Only matched records are used for the rental price comparison.
-
-## Christchurch Central Airbnb Price
-
-**Christchurch Central corresponds to SA2 area code `326600`.**
-
-Using the cleaned Airbnb dataset:
-
-- Median Airbnb nightly price: **NZ$238**
-
-## Short-Term vs Long-Term Rental Price Gap
-
-For each matched Airbnb observation:
+For matched observations:
 
 `Rent Gap = Airbnb Nightly Price - Daily Long-Term Rent`
 
-The analysis calculates:
+Outputs include area-level median and maximum price gaps, observation counts, Airbnb listing counts, and active bond counts. Active bonds represent bonds active at the end of the reporting period; they are not a count of vacant or currently available properties.
 
-- `Median_Gap` - typical price gap within an area
-- `Maximum_Gap` - largest single observed price gap
-- `Observations` - number of matched observations supporting the result
+### Recorded integration results
 
-Current results:
+The recorded historical integration run reported:
+- Airbnb observations before join: **18,080**
+- Observations after join: **18,080**
+- Matched observations: **13,821**
+- Unmatched observations: **4,259**
+- Match rate: **76.4%**
 
-- **Wigram West (SA2 322800)** has the largest median gap at approximately **NZ$243.64 per night**, based on 6 observations.
-- **Addington West (SA2 326100)** contains the largest single observed gap at **NZ$1,435 per night**, based on 201 observations.
+The unchanged row count indicates that the join did not multiply Airbnb observations in that run. These figures refer to the historical October 2025-June 2026 dataset, not the current October 2025-August 2026 pipeline totals.
 
-The number of observations should be considered when interpreting area-level results.
+Recorded findings included:
+- **Wigram West (SA2 322800):** largest median price gap, approximately NZ$243.64 per night, based on 6 observations.
+- **Addington West (SA2 326100):** largest single observed price gap, NZ$1,435 per night, based on 201 observations.
+- **Christchurch Central (SA2 326600):** median Airbnb nightly price of NZ$238 in the recorded cleaned dataset.
 
-## Airbnb and Rental Bond Counts
+These are historical run results and may change after future data updates. Area-level results should be interpreted alongside observation counts.
 
-Airbnb supply is represented by the number of unique Airbnb listing IDs within each area and reporting period.
+## Main outputs
 
-Long-term rental activity is represented using `Active Bonds` from the corresponding overall bond record.
+Generated datasets include:
 
-`Active Bonds` refers to active rental bonds and should not be interpreted as the number of vacant or currently available rental properties.
+`data/processed/christchurch_listings_combined.csv`
 
-## Limitations
+`data/processed/christchurch_listings_combined_cleaned.csv`
 
-The Airbnb mapping uses the Stats NZ SA2 2026 geographic field, while the rental bond source documentation refers to SA2-2019 geographic definitions.
+`data/processed/Christchurch_coordinate_area_lookup.csv`
 
-This difference may contribute to unmatched area codes and should be considered when interpreting the 76.4% join rate.
+`data/processed/Christchurch_Airbnb_with_area_codes.csv`
+  
+Summary statistics, plots, and missing-value visualisations are written to `outputs/`.
 
-Airbnb prices are advertised nightly short-term accommodation prices, while rental bond median rents represent weekly long-term rental prices. Dividing weekly rent by seven provides a daily comparison unit, but the two values still represent different rental markets.
+Further implementation notes are available in
+
+`docs/deliverable7_automation.md`
+
+## Reproducibility and limitations
+
+- Keep raw downloads unchanged and record each monthly Airbnb scrape date.
+- Never commit API keys or other credentials.
+- Run the pipeline from the repository root so relative paths resolve correctly.
+- Review validation messages and audit outputs after each run.
+- Airbnb advertised nightly prices and long-term rental bond statistics describe different rental markets. Converting weekly rent to a daily value aligns units but does not make the markets equivalent.
+- Account for the SA2-2026 versus SA2-2019 geographic-definition difference when interpreting unmatched records.
+- Do not extend the bond comparison into periods without matching bond data.
+- Interpret area-level results in light of their observation counts.
