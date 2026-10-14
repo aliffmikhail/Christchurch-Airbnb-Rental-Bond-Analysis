@@ -47,8 +47,7 @@ Sanity checks:
     produces an inconsistent result. Checks never alter the data; for valid
     input the outputs are identical to the unchecked version.
 
-    This code was produced with the help of AI. I used AI to generate part of the code. 
-    I reviewed and tested the code to ensure it meets the requirements and is free of errors.
+    This code was produced with the help of AI. I used AI to generate some parts of the code.
 ===============================================================================
 """
 
