@@ -3,7 +3,7 @@ import subprocess
 import sys
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parent
 
 STAGES = [
     ("Preparing monthly Airbnb data", "Deliverable3_DataPrep.py"),

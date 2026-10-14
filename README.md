@@ -49,7 +49,7 @@ Scrape dates used to calculate `days_since_last_review` are maintained in `confi
 
 From the repository root:
 
-`python scripts/run_airbnb_pipeline.py`
+`python run_airbnb_pipeline.py`
 
 The orchestrator runs stages in sequence and stops if a stage fails, preventing later steps from using incomplete or invalid outputs.
 
