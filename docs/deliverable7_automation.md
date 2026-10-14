@@ -7,7 +7,7 @@ Deliverable 7 extends the existing Airbnb workflow so that newly available month
 The final workflow is orchestrated through:
 
 ```bash
-python scripts/run_airbnb_pipeline.py
+python run_airbnb_pipeline.py
 ```
 
 The objective is to reuse existing processed information where possible and only perform work that is required for newly added data.
@@ -200,7 +200,7 @@ The existing Deliverable 3 visualisations remain focused on the original analysi
 The complete pipeline was run successfully from:
 
 ```bash
-python scripts/run_airbnb_pipeline.py
+python run_airbnb_pipeline.py
 ```
 
 It was then run again without changing the input data.
